@@ -1,4 +1,15 @@
-"scripts": 
 {
-  "build": "eleventy"
-}
+    "name": "webengineering-gruppenarbeit",
+    "version": "1.0.0",
+    "description": "Statische Website für Gruppenarbeit mit Eleventy, Markdown und GitHub Pages",
+    "scripts": {
+      "start": "eleventy --serve",
+      "build": "eleventy"
+    },
+    "author": "Noah und Nicolas",
+    "license": "MIT",
+    "devDependencies": {
+      "@11ty/eleventy": "^3.0.0"
+    }
+  }
+  
