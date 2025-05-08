@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Webengineering Gruppenarbeit 1 von Noah und Nicolas" />
+  <meta name="author" content="Noah und Nicolas" />
+  <title>{{ title or "Gruppenarbeit 1 Noah und Nicolas" }}</title>
+
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <nav aria-label="Hauptnavigation">
+      <ul>
+        <li><a href="/about.html">Über mich</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section id="Startseite" aria-labelledby="heading-main">
+        <h1 id="heading-main">{{ heading or "Startseite" }}</h1>
+        {{ content | safe }}
+    </section>
+  </main>
+
+  <footer>
+    <p>2025 Noah Neuenschwander und Nicolas Weber. Alle Rechte vorbehalten.</p>
+  </footer>
+</body>
+</html>
