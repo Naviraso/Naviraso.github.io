@@ -1,11 +1,18 @@
 {
-    "name": "webengineering-gruppenarbeit",
+    "name": "webengineering-eleventy",
     "version": "1.0.0",
-    "description": "Statische Website für Gruppenarbeit mit Eleventy, Markdown und GitHub Pages",
+    "description": "Statische Website mit Eleventy für Webengineering-Gruppenarbeit",
+    "main": "index.js",
     "scripts": {
-      "start": "eleventy --serve",
-      "build": "eleventy"
+      "build": "eleventy",
+      "start": "eleventy --serve"
     },
+    "keywords": [
+      "eleventy",
+      "11ty",
+      "static-site",
+      "cloudflare-pages"
+    ],
     "author": "Noah und Nicolas",
     "license": "MIT",
     "devDependencies": {
