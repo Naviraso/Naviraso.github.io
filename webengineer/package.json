@@ -1,22 +1,11 @@
 {
-    "name": "webengineering-eleventy",
-    "version": "1.0.0",
-    "description": "Statische Website mit Eleventy für Webengineering-Gruppenarbeit",
-    "main": "index.js",
-    "scripts": {
-      "build": "eleventy",
-      "start": "eleventy --serve"
-    },
-    "keywords": [
-      "eleventy",
-      "11ty",
-      "static-site",
-      "cloudflare-pages"
-    ],
-    "author": "Noah und Nicolas",
-    "license": "MIT",
-    "devDependencies": {
-      "@11ty/eleventy": "^3.0.0"
-    }
+  "name": "webengineering-eleventy",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "eleventy"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.0"
   }
+}
   
