@@ -1,9 +1,9 @@
 module.exports = function(eleventyConfig) {
   return {
     dir: {
-      input: "src",          
-      includes: "_includes", 
-      output: "_site"        
+      input: "src",          // <== DEIN SRC ORDNER
+      includes: "_includes", // <== relative zu "src"
+      output: "_site"        // <== dein build-Ordner (egal ob schon existiert)
     }
   };
 };
