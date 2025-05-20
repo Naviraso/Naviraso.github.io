@@ -2,7 +2,8 @@
 title: "Projekte"
 ---
 
-Hier sind ein paar meiner Projekte:
+Ein Überblick über einfache Webprojekte:
 
-- Diplomarbeit mit InfluxDB
-- Statische Website mit Hugo & Cloudflare
+- **HTML**: Struktur einer Seite
+- **CSS**: Gestaltung mit Flexbox
+- **JS**: Interaktive Listen

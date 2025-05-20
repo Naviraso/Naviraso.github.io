@@ -2,21 +2,26 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>{{ block "title" . }}{{ .Title }}{{ end }}</title>
-  <link rel="stylesheet" href="{{ "style.css" | relURL }}">
+  <title>{{ .Title }}</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <nav>
-    <ul>
-        <li><a href="{{ "/" | relURL }}">Startseite</a></li>
-        <li><a href="{{ "/projekte/" | relURL }}">Projekte</a></li>
-        <li><a href="{{ "/kontakt/" | relURL }}">Kontakt</a></li>
-        <li><a href="{{ "/ueber-uns/" | relURL }}">Über uns</a></li>
-    </ul>
-  </nav>
-
+  <header>
+    <h1>{{ .Site.Title }}</h1>
+    <nav>
+      <ul>
+        <li><a href="/">Startseite</a></li>
+        <li><a href="/ueber-uns/">Über uns</a></li>
+        <li><a href="/projekte/">Projekte</a></li>
+        <li><a href="/kontakt/">Kontakt</a></li>
+      </ul>
+    </nav>
+  </header>
   <main>
     {{ block "main" . }}{{ end }}
   </main>
-
   <footer>
+    <p>&copy; 2025 Webengineering Projekt</p>
+  </footer>
+</body>
+</html>

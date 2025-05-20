@@ -1,24 +1,27 @@
 body {
   font-family: sans-serif;
-  margin: 2rem;
+  line-height: 1.6;
   background: #f9f9f9;
   color: #333;
+  margin: 0;
+  padding: 0;
+}
+header, nav, footer {
+  background: #eee;
+  padding: 1rem;
 }
 nav ul {
   list-style: none;
-  padding: 0;
   display: flex;
   gap: 1rem;
 }
-nav a {
+main {
+  padding: 2rem;
+}
+a {
+  color: #0066cc;
   text-decoration: none;
-  color: #007acc;
 }
-nav a:hover {
+a:hover {
   text-decoration: underline;
-}
-footer {
-  margin-top: 2rem;
-  font-size: 0.9rem;
-  color: #666;
 }
