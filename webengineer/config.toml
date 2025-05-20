@@ -1,5 +1,5 @@
 baseURL = "https://naviraso-github-io.pages.dev/"
-languageCode = "de"
+languageCode = "de-ch"
 title = "Webseite für Projekt von Nicolas Weber und Noah Neuenschwander"
 
 [menu]
