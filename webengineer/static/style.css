@@ -1,0 +1,10 @@
+body {
+  font-family: sans-serif;
+  margin: 2rem;
+  background: #f9f9f9;
+  color: #333;
+}
+header, footer {
+  background: #eee;
+  padding: 1rem;
+}
