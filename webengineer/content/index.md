@@ -1,13 +1,7 @@
 ---
-title: "Startseite"
-date: 2025-05-20
-layout: "startlayout"
+title: "Willkommen"
 ---
 
-# Hallo Welt
+# Willkommen auf meiner Website
 
-Dies ist eine Startseite mit einem eigenen Layout.
-
-- Punkt 1
-- Punkt 2
-- Punkt 3
+Dies ist die Startseite. 🎉

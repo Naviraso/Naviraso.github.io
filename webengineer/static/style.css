@@ -4,7 +4,21 @@ body {
   background: #f9f9f9;
   color: #333;
 }
-header, footer {
-  background: #eee;
-  padding: 1rem;
+nav ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 1rem;
+}
+nav a {
+  text-decoration: none;
+  color: #007acc;
+}
+nav a:hover {
+  text-decoration: underline;
+}
+footer {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  color: #666;
 }
