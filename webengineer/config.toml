@@ -1,0 +1,4 @@
+baseURL = "https://naviraso-github-io.pages.dev/"
+languageCode = "de-ch"
+title = "Meine WebSeite"
+theme = "ananke"
