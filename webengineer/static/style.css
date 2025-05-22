@@ -1,12 +1,16 @@
 :root {
   --main-color: #0066cc;
+  --accent-color: #ff6600;
   --background: #f9f9f9;
   --text-color: #333;
   --font-base: 'Segoe UI', sans-serif;
+  --spacing: 1rem;
 }
 
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -14,27 +18,41 @@ body {
   line-height: 1.6;
   background: var(--background);
   color: var(--text-color);
-  margin: 0;
-  padding: 0;
+  padding: var(--spacing);
 }
 
-header, nav, footer {
-  background: #eee;
-  padding: 1rem;
+header, footer {
+  background-color: #eee;
+  padding: var(--spacing);
+  text-align: center;
 }
 
 nav ul {
-  list-style: none;
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
-  padding: 0;
+  justify-content: center;
+  list-style: none;
+  gap: var(--spacing);
+  margin: var(--spacing) 0;
+}
+
+nav a {
+  text-decoration: none;
+  color: var(--main-color);
+  font-weight: bold;
+}
+
+nav a:hover,
+nav a:focus {
+  color: var(--accent-color);
+  text-decoration: underline;
 }
 
 main {
-  padding: 2rem;
   display: grid;
   grid-template-columns: 1fr;
+  gap: var(--spacing);
+  padding: var(--spacing);
 }
 
 @media (min-width: 768px) {
@@ -43,25 +61,22 @@ main {
   }
 }
 
-a {
-  color: var(--main-color);
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
 h1, h2, h3 {
   color: var(--main-color);
+  margin-bottom: 0.5em;
+}
+
+p, ul, li, a {
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 ul {
-  padding-left: 1.5rem;
+  padding-left: calc(var(--spacing) * 1.5);
 }
 
 [tabindex]:focus,
 a:focus {
-  outline: 3px solid #ffbf47;
+  outline: 3px solid var(--accent-color);
   outline-offset: 4px;
 }
