@@ -2,3 +2,23 @@ baseURL = "https://naviraso-github-io.pages.dev/"
 languageCode = "de-ch"
 title = "Webseite für Projekt von Nicolas Weber und Noah Neuenschwander"
 
+[menu]
+  [[menu.main]]
+    name = "Home"
+    url = "/"
+    weight = 1
+
+  [[menu.main]]
+    name = "Über uns"
+    url = "/ueber-uns/"
+    weight = 2
+
+  [[menu.main]]
+    name = "Projekte"
+    url = "/projekte/"
+    weight = 3
+
+  [[menu.main]]
+    name = "Kontakt"
+    url = "/kontakt/"
+    weight = 4
