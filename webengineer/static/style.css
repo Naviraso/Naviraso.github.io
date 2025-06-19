@@ -1,11 +1,19 @@
+```css
+/* stylelint-disable declaration-no-invalid-variable */
+
 :root {
   font-size: 16px;
+  /* Farbpalette */
   --main-color: #0066cc;
   --accent-color: #ff6600;
   --background: #f9f9f9;
   --text-color: #333;
+
+  /* Schrift und Abstände */
   --font-base: 'Segoe UI', sans-serif;
   --spacing: 1rem;
+
+  /* Layoutgrenze */
   --max-width: 80rem;
 }
 
@@ -16,17 +24,17 @@
 }
 
 body {
-  font-family: var(--font-base);
+  font-family: var(--font-base, sans-serif);
   line-height: 1.6;
-  background: var(--background);
-  color: var(--text-color);
-  padding: var(--spacing);
+  background: var(--background, #fff);
+  color: var(--text-color, #000);
+  padding: var(--spacing, 1rem);
   font-size: 1rem;
 }
 
 header, footer {
   background-color: #eee;
-  padding: var(--spacing);
+  padding: var(--spacing, 1rem);
   text-align: center;
 }
 
@@ -36,7 +44,7 @@ nav ul {
   align-items: center;
   list-style: none;
   gap: 0.5rem;
-  margin: var(--spacing) 0;
+  margin: var(--spacing, 1rem) 0;
   padding: 0;
 }
 
@@ -44,29 +52,29 @@ nav ul {
   nav ul {
     flex-direction: row;
     justify-content: center;
-    gap: var(--spacing);
+    gap: var(--spacing, 1rem);
   }
 }
 
 nav a {
   text-decoration: none;
-  color: var(--main-color);
+  color: var(--main-color, blue);
   font-weight: bold;
   font-size: 1rem;
 }
 
 nav a:hover,
 nav a:focus {
-  color: var(--accent-color);
+  color: var(--accent-color, orange);
   text-decoration: underline;
 }
 
 main {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--spacing);
-  padding: var(--spacing);
-  max-width: var(--max-width);
+  gap: var(--spacing, 1rem);
+  padding: var(--spacing, 1rem);
+  max-width: var(--max-width, 80rem);
   margin: 0 auto;
 }
 
@@ -94,7 +102,7 @@ section {
 }
 
 h1, h2, h3 {
-  color: var(--main-color);
+  color: var(--main-color, blue);
   margin-bottom: 0.5em;
   font-size: 1.5rem;
 }
@@ -110,6 +118,6 @@ ul {
 
 [tabindex]:focus,
 a:focus {
-  outline: 0.1875rem solid var(--accent-color);
+  outline: 0.1875rem solid var(--accent-color, orange);
   outline-offset: 0.25rem;
 }
