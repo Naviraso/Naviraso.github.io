@@ -4,7 +4,7 @@ import {expect, test} from '@playwright/test';
 const url = "localhost:3000"
 
 test('get route', async ({ page }) => {
-  test.setTimeout(100000); // ms
+  test.setTimeout(10000); // ms
 
   const from = "Freiburgstrasse 251, 3018 Bern";
   const to = "Belpstrasse 37, 3008 Bern";
