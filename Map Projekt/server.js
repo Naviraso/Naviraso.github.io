@@ -1,7 +1,4 @@
 import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -12,43 +9,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Angepasste Helmet-Konfiguration für Leaflet und Inline-Skripte
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          "'unsafe-inline'", // für Inline-Skripte
-          "https://unpkg.com" // für Leaflet
-        ],
-        styleSrc: [
-          "'self'",
-          "'unsafe-inline'", // für Inline-Styles
-          "https://unpkg.com"
-        ],
-        imgSrc: [
-          "'self'",
-          "data:",
-          "https://unpkg.com",
-          "https://*.tile.openstreetmap.org"
-        ],
-        fontSrc: ["'self'", "https://unpkg.com"],
-        connectSrc: [
-          "'self'",
-          "https://api.openrouteservice.org",
-          "https://unpkg.com"
-        ],
-        mediaSrc: ["'self'", "data:"],
-        objectSrc: ["'none'"],
-        frameSrc: ["'none'"]
-      }
-    }
-  })
-);
 
-app.use(cors());
-app.use(morgan('dev'));
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get(/^\/(?!api\/).*/, (req, res) => {
@@ -71,3 +33,23 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server läuft auf http://localhost:${PORT}`);
 });
+
+async function fetchAddressSuggestions(query) {
+    if (!query || query.length < 3) return [];
+    const url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${ORS_API_KEY}&text=${encodeURIComponent(query)}`;
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        const data = await res.json();
+        if (!data.features) return [];
+        // Nur echte Punkte zulassen!
+        return data.features
+            .filter(f => f.geometry && f.geometry.type === "Point")
+            .map(f => ({
+                label: f.properties.label,
+                coords: f.geometry.coordinates
+            }));
+    } catch (e) {
+        return [];
+    }
+}

@@ -148,33 +148,21 @@
         // ==== Autocomplete ====
         async function fetchAddressSuggestions(query) {
             if (!query || query.length < 3) return [];
-            
-            const url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${ORS_API_KEY}&text=${encodeURIComponent(query)}&boundary.country=DE`;
-            console.log('Autocomplete URL:', url);
-            
+            // boundary.country=DE entfernt, damit weltweit gesucht wird
+            const url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${ORS_API_KEY}&text=${encodeURIComponent(query)}`;
             try {
                 const res = await fetch(url);
-                console.log('Autocomplete Response Status:', res.status);
-                
-                if (!res.ok) {
-                    console.error('Autocomplete API Error:', res.status, res.statusText);
-                    return [];
-                }
-                
+                if (!res.ok) return [];
                 const data = await res.json();
-                console.log('Autocomplete Data:', data);
-                
-                if (!data.features) {
-                    console.warn('No features in autocomplete response');
-                    return [];
-                }
-                
-                return data.features.map(f => ({
-                    label: f.properties.label,
-                    coords: f.geometry.coordinates
-                }));
+                if (!data.features) return [];
+                // Nur echte Punkte zulassen!
+                return data.features
+                    .filter(f => f.geometry && f.geometry.type === "Point")
+                    .map(f => ({
+                        label: f.properties.label,
+                        coords: f.geometry.coordinates
+                    }));
             } catch (e) {
-                console.error('Autocomplete Error:', e);
                 return [];
             }
         }
