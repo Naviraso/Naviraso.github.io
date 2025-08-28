@@ -1,21 +1,306 @@
+<!-- Optimierte Version mit Google Maps Integration -->
 <!DOCTYPE html>
 <html>
 <head>
     <title>Route Planner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        form {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        label {
+            display: inline-block;
+            width: 60px;
+            margin-right: 10px;
+        }
+        
+        input[type="text"] {
+            width: 200px;
+            padding: 5px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        #search-history {
+            margin-top: 30px;
+        }
+        
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }
+        
+        #map {
+            height: 400px;
+            width: 100%;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .map-container {
+            margin: 20px 0;
+        }
+    </style>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=5b3ce3597851110001cf62487d4bc6548715427c837b81645c6abf66&callback=initMap&libraries=geometry"></script>
 </head>
 <body>
-    <form>
-        <label for="from-input">from</label>
-        <input id="from-input" type="text" />
+    <form id="route-form">
+        <label for="from-input">Von:</label>
+        <input id="from-input" type="text" placeholder="Startort eingeben" required />
         
-        <label for="to-input">to</label>
-        <input id="to-input" type="text" />
+        <label for="to-input">Nach:</label>
+        <input id="to-input" type="text" placeholder="Zielort eingeben" required />
         
-        <button type="submit">Get Route</button>
+        <button type="submit">Route berechnen</button>
     </form>
     
     <div id="results">
         <!-- Route results will appear here -->
     </div>
+    
+    <div class="map-container">
+        <h2>Karte</h2>
+        <div id="map"></div>
+    </div>
+    
+    <div id="search-history">
+        <h2>Letzte Suchen</h2>
+        <table id="history-table">
+            <thead>
+                <tr>
+                    <th>Von</th>
+                    <th>Nach</th>
+                    <th>Datum</th>
+                    <th>Uhrzeit</th>
+                </tr>
+            </thead>
+            <tbody id="history-tbody">
+                <!-- Search history will appear here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Array to store search history
+        let searchHistory = [];
+        
+        // Google Maps variables
+        let map;
+        let directionsService;
+        let directionsRenderer;
+        
+        // Initialize Google Map
+        function initMap() {
+            // Default center (Germany)
+            const defaultCenter = { lat: 51.1657, lng: 10.4515 };
+            
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 6,
+                center: defaultCenter
+            });
+            
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+            directionsRenderer.setMap(map);
+        }
+        
+        // Function to calculate and display route on map
+        function calculateRoute(from, to) {
+            if (!directionsService || !directionsRenderer) {
+                console.error('Google Maps not initialized');
+                return;
+            }
+            
+            const request = {
+                origin: from,
+                destination: to,
+                travelMode: google.maps.TravelMode.DRIVING
+            };
+            
+            directionsService.route(request, (result, status) => {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(result);
+                    
+                    // Display route information
+                    const route = result.routes[0];
+                    const leg = route.legs[0];
+                    
+                    const resultsDiv = document.getElementById('results');
+                    if (resultsDiv) {
+                        resultsDiv.innerHTML = 
+                            `<h3>Route von "${from}" nach "${to}"</h3>
+                             <p><strong>Entfernung:</strong> ${leg.distance.text}</p>
+                             <p><strong>Fahrzeit:</strong> ${leg.duration.text}</p>
+                             <p><strong>Start:</strong> ${leg.start_address}</p>
+                             <p><strong>Ziel:</strong> ${leg.end_address}</p>`;
+                    }
+                } else {
+                    console.error('Directions request failed due to ' + status);
+                    const resultsDiv = document.getElementById('results');
+                    if (resultsDiv) {
+                        resultsDiv.innerHTML = 
+                            `<h3>Fehler bei der Routenberechnung</h3>
+                             <p>Die Route von "${from}" nach "${to}" konnte nicht berechnet werden.</p>
+                             <p>Fehler: ${status}</p>`;
+                    }
+                }
+            });
+        }
+
+        // Function to add search to history
+        function addToHistory(from, to) {
+            const now = new Date();
+            const search = {
+                from: from,
+                to: to,
+                date: now.toLocaleDateString('de-DE'),
+                time: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+            };
+            
+            console.log('Adding to history:', search); // Debug log
+            
+            // Add to beginning of array (most recent first)
+            searchHistory.unshift(search);
+            
+            // Keep only last 10 searches
+            if (searchHistory.length > 10) {
+                searchHistory = searchHistory.slice(0, 10);
+            }
+            
+            // Update table display immediately
+            displayHistory();
+        }
+
+        // Function to display search history in table
+        function displayHistory() {
+            const tbody = document.getElementById('history-tbody');
+            console.log('Displaying history, entries:', searchHistory.length); // Debug log
+            
+            if (!tbody) {
+                console.error('Table body not found!');
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            
+            if (searchHistory.length === 0) {
+                const row = tbody.insertRow();
+                const cell = row.insertCell(0);
+                cell.colSpan = 4;
+                cell.textContent = 'Noch keine Suchen durchgeführt';
+                cell.style.textAlign = 'center';
+                cell.style.fontStyle = 'italic';
+                cell.style.color = '#666';
+                return;
+            }
+            
+            searchHistory.forEach((search, index) => {
+                console.log('Adding row:', index, search); // Debug log
+                const row = tbody.insertRow();
+                row.insertCell(0).textContent = search.from;
+                row.insertCell(1).textContent = search.to;
+                row.insertCell(2).textContent = search.date;
+                row.insertCell(3).textContent = search.time;
+            });
+        }
+
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded'); // Debug log
+            
+            const form = document.getElementById('route-form');
+            if (!form) {
+                console.error('Form not found!');
+                return;
+            }
+            
+            // Display initial empty state
+            displayHistory();
+            
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log('Form submit event triggered'); // Debug log
+                
+                const fromInput = document.getElementById('from-input');
+                const toInput = document.getElementById('to-input');
+                
+                if (!fromInput || !toInput) {
+                    console.error('Input fields not found!');
+                    return;
+                }
+                
+                const from = fromInput.value.trim();
+                const to = toInput.value.trim();
+                
+                console.log('Form values:', from, to); // Debug log
+                
+                if (from && to) {
+                    // Add to search history
+                    addToHistory(from, to);
+                    
+                    // Display route result (placeholder)
+                    const resultsDiv = document.getElementById('results');
+                    if (resultsDiv) {
+                        resultsDiv.innerHTML = 
+                            `<h3>Route von "${from}" nach "${to}"</h3>
+                             <p>Route wird berechnet... (Hier würde die tatsächliche Routenberechnung stattfinden)</p>`;
+                    }
+                    
+                    // Clear form
+                    fromInput.value = '';
+                    toInput.value = '';
+                } else {
+                    console.log('Form validation failed - empty fields'); // Debug log
+                    alert('Bitte beide Felder ausfüllen!');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
