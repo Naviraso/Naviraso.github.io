@@ -113,16 +113,16 @@
         </span>
         <button type="submit">Route berechnen</button>
     </form>
-    
+
     <div id="results">
         <!-- Route results will appear here -->
     </div>
-    
+
     <div class="map-container">
         <h2>Karte</h2>
         <div id="map"></div>
     </div>
-    
+
     <div id="search-history">
         <h2>Meistgesuchte Routen</h2>
         <table id="history-table">
@@ -148,16 +148,33 @@
         // ==== Autocomplete ====
         async function fetchAddressSuggestions(query) {
             if (!query || query.length < 3) return [];
+            
             const url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${ORS_API_KEY}&text=${encodeURIComponent(query)}&boundary.country=DE`;
+            console.log('Autocomplete URL:', url);
+            
             try {
                 const res = await fetch(url);
-                if (!res.ok) return [];
+                console.log('Autocomplete Response Status:', res.status);
+                
+                if (!res.ok) {
+                    console.error('Autocomplete API Error:', res.status, res.statusText);
+                    return [];
+                }
+                
                 const data = await res.json();
+                console.log('Autocomplete Data:', data);
+                
+                if (!data.features) {
+                    console.warn('No features in autocomplete response');
+                    return [];
+                }
+                
                 return data.features.map(f => ({
                     label: f.properties.label,
                     coords: f.geometry.coordinates
                 }));
             } catch (e) {
+                console.error('Autocomplete Error:', e);
                 return [];
             }
         }
@@ -201,42 +218,84 @@
         // ==== Leaflet Map & Routing ====
         let map, routeLayer;
         function initMap() {
-            map = L.map('map').setView([51.1657, 10.4515], 6); // Germany center
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+            try {
+                console.log('Initialisiere Karte...');
+                map = L.map('map').setView([51.1657, 10.4515], 6); // Germany center
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+                
+                // Warte kurz und dann resize die Karte
+                setTimeout(() => {
+                    map.invalidateSize();
+                    console.log('Karte initialisiert und Größe angepasst');
+                }, 100);
+                
+            } catch (error) {
+                console.error('Fehler beim Initialisieren der Karte:', error);
+            }
         }
 
         async function calculateRoute(fromCoords, toCoords, fromLabel, toLabel) {
-            const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${ORS_API_KEY}&start=${fromCoords[0]},${fromCoords[1]}&end=${toCoords[0]},${toCoords[1]}`;
-            const res = await fetch(url);
-            if (!res.ok) {
-                showRouteError(fromLabel, toLabel, "API Fehler");
-                return;
-            }
-            const data = await res.json();
-            if (!data.routes || !data.routes[0]) {
-                showRouteError(fromLabel, toLabel, "Keine Route gefunden");
-                return;
-            }
-            const route = data.routes[0];
-            const summary = route.summary;
-            const distanceKm = (summary.distance / 1000).toFixed(2);
-            const durationMin = Math.round(summary.duration / 60);
+            console.log('Berechne Route von', fromCoords, 'nach', toCoords);
 
-            // Show route info
-            document.getElementById('results').innerHTML =
-                `<h3>Route von "${fromLabel}" nach "${toLabel}"</h3>
-                 <p><strong>Entfernung:</strong> ${distanceKm} km</p>
-                 <p><strong>Fahrzeit:</strong> ${durationMin} Minuten</p>`;
+            const url = 'https://api.openrouteservice.org/v2/directions/driving-car';
+            const requestBody = {
+                coordinates: [fromCoords, toCoords]
+            };
 
-            // Draw route on map
-            if (routeLayer) {
-                map.removeLayer(routeLayer);
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': ORS_API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await res.json();
+                console.log('API Response Data:', data);
+
+                if (data.error) {
+                    showRouteError(fromLabel, toLabel, data.error.message || "API Fehler");
+                    return;
+                }
+
+                if (!data.routes || !data.routes[0]) {
+                    showRouteError(fromLabel, toLabel, "Keine Route gefunden");
+                    return;
+                }
+
+                const route = data.routes[0];
+
+                if (!route.geometry || !route.geometry.coordinates) {
+                    showRouteError(fromLabel, toLabel, "Keine Geometriedaten in der Route gefunden");
+                    return;
+                }
+
+                const summary = route.summary;
+                const distanceKm = (summary.distance / 1000).toFixed(2);
+                const durationMin = Math.round(summary.duration / 60);
+
+                // Show route info
+                document.getElementById('results').innerHTML =
+                    `<h3>Route von "${fromLabel}" nach "${toLabel}"</h3>
+                     <p><strong>Entfernung:</strong> ${distanceKm} km</p>
+                     <p><strong>Fahrzeit:</strong> ${durationMin} Minuten</p>`;
+
+                // Draw route on map
+                if (routeLayer) {
+                    map.removeLayer(routeLayer);
+                }
+                const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                routeLayer = L.polyline(coords, { color: 'blue', weight: 5 }).addTo(map);
+                map.fitBounds(routeLayer.getBounds());
+
+            } catch (error) {
+                console.error('Routing Error:', error);
+                showRouteError(fromLabel, toLabel, "Netzwerk-Fehler");
             }
-            const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-            routeLayer = L.polyline(coords, { color: 'blue', weight: 5 }).addTo(map);
-            map.fitBounds(routeLayer.getBounds());
         }
 
         function showRouteError(from, to, msg) {
