@@ -11,10 +11,10 @@ const PORT = process.env.PORT || 3000;
 // Angepasste Helmet-Konfiguration für Leaflet und Inline-Skripte
 
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'frontend')));
 
 app.get(/^\/(?!api\/).*/, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
 
 app.get('/api/health', (req, res) => {
