@@ -1,385 +1,57 @@
-<!-- Optimierte Version mit Google Maps Integration -->
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <title>Route Planner</title>
     <meta charset="utf-8">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        form {
-            margin-bottom: 30px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        label {
-            display: inline-block;
-            width: 60px;
-            margin-right: 10px;
-        }
-        .autocomplete-container {
-            position: relative;
-            display: inline-block;
-        }
-        .autocomplete-suggestions {
-            position: absolute;
-            background: #fff;
-            border: 1px solid #ccc;
-            z-index: 1000;
-            width: 200px;
-            max-height: 180px;
-            overflow-y: auto;
-            display: none;
-        }
-        .autocomplete-suggestion {
-            padding: 6px 10px;
-            cursor: pointer;
-        }
-        .autocomplete-suggestion:hover {
-            background: #f2f2f2;
-        }
-        input[type="text"] {
-            width: 200px;
-            padding: 5px;
-            margin-right: 10px;
-            margin-bottom: 10px;
-        }
-        button {
-            padding: 8px 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        #search-history {
-            margin-top: 30px;
-        }
-        h2 {
-            color: #333;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 5px;
-        }
-        #map {
-            height: 400px;
-            width: 100%;
-            margin: 20px 0;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        .map-container {
-            margin: 20px 0;
-        }
-    </style>
+    <title>Route Planner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
-    <form id="route-form" autocomplete="off">
-        <label for="from-input">Von:</label>
-        <span class="autocomplete-container">
+<form id="route-form" autocomplete="off">
+    <label for="from-input">Von:</label>
+    <div class="autocomplete-container">
             <input id="from-input" type="text" placeholder="Startort eingeben" required />
             <div id="from-suggestions" class="autocomplete-suggestions"></div>
-        </span>
-        <label for="to-input">Nach:</label>
-        <span class="autocomplete-container">
+        </div>
+    <label for="to-input">Nach:</label>
+    <div class="autocomplete-container">
             <input id="to-input" type="text" placeholder="Zielort eingeben" required />
             <div id="to-suggestions" class="autocomplete-suggestions"></div>
-        </span>
-        <button type="submit">Route berechnen</button>
-    </form>
+        </div>
+    <button type="submit">Route berechnen</button>
+</form>
 
-    <div id="results">
-        <!-- Route results will appear here -->
-    </div>
+<div id="results">
+    <!-- Route results will appear here -->
+</div>
 
-    <div class="map-container">
-        <h2>Karte</h2>
-        <div id="map"></div>
-    </div>
+<div class="map-container">
+    <h2>Karte</h2>
+    <div id="map"></div>
+</div>
 
-    <div id="search-history">
-        <h2>Meistgesuchte Routen</h2>
-        <table id="history-table">
-            <thead>
-                <tr>
-                    <th>Von</th>
-                    <th>Nach</th>
-                    <th>Anzahl Suchen</th>
-                </tr>
-            </thead>
-            <tbody id="history-tbody">
-                <!-- Search history will appear here -->
-            </tbody>
-        </table>
-    </div>
+<div id="search-history">
+    <h2>Meistgesuchte Routen</h2>
+    <table id="history-table">
+        <thead>
+        <tr>
+            <th>Von</th>
+            <th>Nach</th>
+            <th>Anzahl Suchen</th>
+        </tr>
+        </thead>
+        <tbody id="history-tbody">
+        <!-- Search history will appear here -->
+        </tbody>
+    </table>
+</div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script>
-        // ==== Konfiguration ====
-        const ORS_API_KEY = '5b3ce3597851110001cf62487d4bc6548715427c837b81645c6abf66'; // <-- HIER DEINEN API-KEY EINTRAGEN
-
-        // ==== Autocomplete ====
-        async function fetchAddressSuggestions(query) {
-            if (!query || query.length < 3) return [];
-            // boundary.country=DE entfernt, damit weltweit gesucht wird
-            const url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${ORS_API_KEY}&text=${encodeURIComponent(query)}`;
-            try {
-                const res = await fetch(url);
-                if (!res.ok) return [];
-                const data = await res.json();
-                if (!data.features) return [];
-                // Nur echte Punkte zulassen!
-                return data.features
-                    .filter(f => f.geometry && f.geometry.type === "Point")
-                    .map(f => ({
-                        label: f.properties.label,
-                        coords: f.geometry.coordinates
-                    }));
-            } catch (e) {
-                return [];
-            }
-        }
-
-        function setupAutocomplete(inputId, suggestionsId, onSelect) {
-            const input = document.getElementById(inputId);
-            const suggestionsBox = document.getElementById(suggestionsId);
-
-            let lastSuggestions = [];
-
-            input.addEventListener('input', async () => {
-                const value = input.value.trim();
-                if (value.length < 3) {
-                    suggestionsBox.style.display = 'none';
-                    return;
-                }
-                const suggestions = await fetchAddressSuggestions(value);
-                lastSuggestions = suggestions;
-                suggestionsBox.innerHTML = '';
-                suggestions.forEach((s, idx) => {
-                    const div = document.createElement('div');
-                    div.className = 'autocomplete-suggestion';
-                    div.textContent = s.label;
-                    div.onclick = () => {
-                        input.value = s.label;
-                        suggestionsBox.style.display = 'none';
-                        if (onSelect) onSelect(s);
-                    };
-                    suggestionsBox.appendChild(div);
-                });
-                suggestionsBox.style.display = suggestions.length ? 'block' : 'none';
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!suggestionsBox.contains(e.target) && e.target !== input) {
-                    suggestionsBox.style.display = 'none';
-                }
-            });
-        }
-
-        // ==== Leaflet Map & Routing ====
-        let map, routeLayer;
-        function initMap() {
-            try {
-                console.log('Initialisiere Karte...');
-                map = L.map('map').setView([51.1657, 10.4515], 6); // Germany center
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(map);
-                
-                // Warte kurz und dann resize die Karte
-                setTimeout(() => {
-                    map.invalidateSize();
-                    console.log('Karte initialisiert und Größe angepasst');
-                }, 100);
-                
-            } catch (error) {
-                console.error('Fehler beim Initialisieren der Karte:', error);
-            }
-        }
-
-        async function calculateRoute(fromCoords, toCoords, fromLabel, toLabel) {
-            console.log('Berechne Route von', fromCoords, 'nach', toCoords);
-
-            const url = 'https://api.openrouteservice.org/v2/directions/driving-car';
-            const requestBody = {
-                coordinates: [fromCoords, toCoords]
-            };
-
-            try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': ORS_API_KEY,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                const data = await res.json();
-                console.log('API Response Data:', data);
-
-                if (data.error) {
-                    showRouteError(fromLabel, toLabel, data.error.message || "API Fehler");
-                    return;
-                }
-
-                if (!data.routes || !data.routes[0]) {
-                    showRouteError(fromLabel, toLabel, "Keine Route gefunden");
-                    return;
-                }
-
-                const route = data.routes[0];
-
-                if (!route.geometry || !route.geometry.coordinates) {
-                    showRouteError(fromLabel, toLabel, "Keine Geometriedaten in der Route gefunden");
-                    return;
-                }
-
-                const summary = route.summary;
-                const distanceKm = (summary.distance / 1000).toFixed(2);
-                const durationMin = Math.round(summary.duration / 60);
-
-                // Show route info
-                document.getElementById('results').innerHTML =
-                    `<h3>Route von "${fromLabel}" nach "${toLabel}"</h3>
-                     <p><strong>Entfernung:</strong> ${distanceKm} km</p>
-                     <p><strong>Fahrzeit:</strong> ${durationMin} Minuten</p>`;
-
-                // Draw route on map
-                if (routeLayer) {
-                    map.removeLayer(routeLayer);
-                }
-                const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-                routeLayer = L.polyline(coords, { color: 'blue', weight: 5 }).addTo(map);
-                map.fitBounds(routeLayer.getBounds());
-
-            } catch (error) {
-                console.error('Routing Error:', error);
-                showRouteError(fromLabel, toLabel, "Netzwerk-Fehler");
-            }
-        }
-
-        function showRouteError(from, to, msg) {
-            document.getElementById('results').innerHTML =
-                `<h3>Fehler bei der Routenberechnung</h3>
-                 <p>Die Route von "${from}" nach "${to}" konnte nicht berechnet werden.</p>
-                 <p>Fehler: ${msg}</p>`;
-        }
-
-        // ==== Suchhistorie (Top 10 meistgesuchte Routen) ====
-        function getHistory() {
-            const raw = localStorage.getItem('routeHistory');
-            return raw ? JSON.parse(raw) : [];
-        }
-        function saveHistory(history) {
-            localStorage.setItem('routeHistory', JSON.stringify(history));
-        }
-        function addToHistory(from, to) {
-            let history = getHistory();
-            const key = `${from}__${to}`;
-            let entry = history.find(h => h.key === key);
-            if (entry) {
-                entry.count++;
-            } else {
-                entry = { key, from, to, count: 1 };
-                history.push(entry);
-            }
-            // Sort by count desc, keep only top 10
-            history.sort((a, b) => b.count - a.count);
-            history = history.slice(0, 10);
-            saveHistory(history);
-            displayHistory();
-        }
-        function displayHistory() {
-            const tbody = document.getElementById('history-tbody');
-            const history = getHistory();
-            tbody.innerHTML = '';
-            if (history.length === 0) {
-                const row = tbody.insertRow();
-                const cell = row.insertCell(0);
-                cell.colSpan = 3;
-                cell.textContent = 'Noch keine Suchen durchgeführt';
-                cell.style.textAlign = 'center';
-                cell.style.fontStyle = 'italic';
-                cell.style.color = '#666';
-                return;
-            }
-            history.forEach(entry => {
-                const row = tbody.insertRow();
-                row.insertCell(0).textContent = entry.from;
-                row.insertCell(1).textContent = entry.to;
-                row.insertCell(2).textContent = entry.count;
-            });
-        }
-
-        // ==== Formular-Logik ====
-        let fromSelection = null, toSelection = null;
-        document.addEventListener('DOMContentLoaded', function() {
-            initMap();
-            displayHistory();
-
-            setupAutocomplete('from-input', 'from-suggestions', s => { fromSelection = s; });
-            setupAutocomplete('to-input', 'to-suggestions', s => { toSelection = s; });
-
-            document.getElementById('route-form').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const fromInput = document.getElementById('from-input');
-                const toInput = document.getElementById('to-input');
-                const from = fromInput.value.trim();
-                const to = toInput.value.trim();
-
-                // Prüfe, ob Auswahl aus Autocomplete getroffen wurde
-                if (!fromSelection || fromSelection.label !== from) {
-                    // Versuche Koordinaten zu holen
-                    const suggestions = await fetchAddressSuggestions(from);
-                    fromSelection = suggestions[0];
-                }
-                if (!toSelection || toSelection.label !== to) {
-                    const suggestions = await fetchAddressSuggestions(to);
-                    toSelection = suggestions[0];
-                }
-                if (!fromSelection || !toSelection) {
-                    showRouteError(from, to, "Adresse nicht gefunden");
-                    return;
-                }
-
-                addToHistory(fromSelection.label, toSelection.label);
-                await calculateRoute(fromSelection.coords, toSelection.coords, fromSelection.label, toSelection.label);
-
-                // Felder leeren & Auswahl zurücksetzen
-                fromInput.value = '';
-                toInput.value = '';
-                fromSelection = null;
-                toSelection = null;
-            });
-        });
-    </script>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- script.js -->
+<script src="script.js" defer></script>
 </body>
 </html>
