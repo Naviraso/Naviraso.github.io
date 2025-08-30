@@ -1,10 +1,16 @@
 // ==== Konfiguration ====
-const ORS_API_KEY = '5b3ce3597851110001cf62487d4bc6548715427c837b81645c6abf66'; // <-- ggf. eigenen ORS-Key einsetzen
+const ORS_API_KEY = '5b3ce3597851110001cf62487d4bc6548715427c837b81645c6abf66';
 
 // ==== Autocomplete ====
 async function fetchAddressSuggestions(query) {
   if (!query || query.length < 3) return [];
-  const url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${ORS_API_KEY}&text=${encodeURIComponent(query)}`;
+  const url = `https://api.openrouteservice.org/geocode/autocomplete` +
+      `?api_key=${ORS_API_KEY}` +
+      `&text=${encodeURIComponent(query)}` +
+      `&layers=address,street,venue` +     // straßennahe Kandidaten
+      `&boundary.country=CHE` +            // Fokus Schweiz
+      `&size=8`                            // mehr Auswahl
+  ;
   try {
     const res = await fetch(url);
     if (!res.ok) return [];
@@ -81,6 +87,14 @@ async function calculateRoute(fromCoords, toCoords, fromLabel, toLabel) {
 
     if (!res.ok) {
       const errTxt = await res.text();
+      try {
+        const j = JSON.parse(errTxt);
+        if (res.status === 404 && j?.error?.code === 2010) {
+          showRouteError(fromLabel, toLabel,
+              "Kein routenfähiger Punkt in der Nähe gefunden. Bitte eine genauere Adresse oder Straße auswählen.");
+          return;
+        }
+      } catch {}
       showRouteError(fromLabel, toLabel, `HTTP ${res.status}: ${errTxt}`);
       return;
     }
@@ -89,9 +103,10 @@ async function calculateRoute(fromCoords, toCoords, fromLabel, toLabel) {
 
     // ORS /geojson returns a FeatureCollection with one LineString feature
     const feature = data && Array.isArray(data.features) ? data.features[0] : null;
-    if (!feature || !feature.geometry || !feature.geometry.coordinates) { 
+
+    if (!feature || !feature.geometry || !feature.geometry.coordinates) {
       showRouteError(fromLabel, toLabel, "Keine Route gefunden");
-      return; 
+      return;
     }
 
     const summary = (feature.properties && feature.properties.summary) ? feature.properties.summary : {};
@@ -103,11 +118,49 @@ async function calculateRoute(fromCoords, toCoords, fromLabel, toLabel) {
        <p><strong>Entfernung:</strong> ${distanceKm} km</p>
        <p><strong>Fahrzeit:</strong> ${durationMin} Minuten</p>`;
 
+    // --- Save route to backend
+    try {
+      const distance_m = Math.round(Number(summary.distance ?? 0));
+      const duration_s = Math.round(Number(summary.duration ?? 0));
+
+      const body = {
+        from: {
+          label: fromLabel,
+          lon: Number(fromCoords[0]),
+          lat: Number(fromCoords[1]),
+        },
+        to: {
+          label: toLabel,
+          lon: Number(toCoords[0]),
+          lat: Number(toCoords[1]),
+        },
+        distance_m,
+        duration_s,
+      };
+
+      const saveRes = await fetch('/api/routes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!saveRes.ok) {
+        const txt = await saveRes.text();
+        console.error('Autosave fehlgeschlagen:', saveRes.status, txt);
+      } else {
+        const saved = await saveRes.json();
+        console.log('Autosave OK, id:', saved.id);
+      }
+    } catch (e) {
+      console.warn('Speichern der Route: Netzwerkfehler', e);
+    }
+
     if (routeLayer) map.removeLayer(routeLayer);
     // coordinates: [ [lon,lat], ... ]
     const latLngs = feature.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
     routeLayer = L.polyline(latLngs, { weight: 5 }).addTo(map);
     map.fitBounds(routeLayer.getBounds());
+
   } catch (error) {
     console.error('Routing Error:', error);
     showRouteError(fromLabel, toLabel, "Netzwerk-Fehler");
