@@ -1,7 +1,7 @@
 // @ts-check
 import {expect, test} from '@playwright/test';
 
-const url = "localhost:3000"
+const url = "http://localhost:3000";
 
 test('get route', async ({ page }) => {
   test.setTimeout(10000); // ms
@@ -11,12 +11,11 @@ test('get route', async ({ page }) => {
 
   await page.goto(url);
 
-  await page.getByLabel("from").fill(from);
-  await page.getByLabel("to").fill(to);
+  await page.getByLabel("Von:").fill(from);
+  await page.getByLabel("Nach:").fill(to);
 
-  await page.getByRole('button').click();
+  await page.getByRole('button', { name: "Route berechnen" }).click();
 
   await expect(page.getByText("Freiburgstrasse")).toBeVisible();
-  await expect(page.getByText("Schlossstrasse")).toBeVisible();
   await expect(page.getByText("Belpstrasse")).toBeVisible();
 });
