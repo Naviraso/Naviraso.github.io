@@ -12,7 +12,6 @@
     "test:debug": "playwright test --debug",
     "show-report": "playwright show-report",
     "test:unit": "jest",
-    "test:playwright": "playwright test",
     "build": "echo 'Build completed'"
   },
   "keywords": [
@@ -28,6 +27,7 @@
     "better-sqlite3": "^12.2.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "jest": "^29.7.0",
     "morgan": "^1.10.1",
     "playwright": "^1.54.2",
     "swagger-jsdoc": "^6.2.8",
