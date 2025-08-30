@@ -11,9 +11,7 @@
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "show-report": "playwright show-report",
-    "test:unit": "jest",
-    "lint": "eslint .",
-    "build": "npm run build:client && npm run build:server"
+    
   },
   "keywords": [
     "nodejs",
