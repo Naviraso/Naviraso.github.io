@@ -16,6 +16,6 @@ test('get route', async ({ page }) => {
 
   await page.getByRole('button', { name: "Route berechnen" }).click();
 
-  await expect(page.getByText("Freiburgstrasse")).toBeVisible();
-  await expect(page.getByText("Belpstrasse")).toBeVisible();
+  await expect(page.getByRole('cell', { name: /Freiburgstrasse/ })).toBeVisible();
+  await expect(page.getByRole('cell', { name: /Belpstrasse/ })).toBeVisible();
 });
