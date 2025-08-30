@@ -11,7 +11,9 @@
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "show-report": "playwright show-report",
-    
+    "test:unit": "jest",
+    "test:playwright": "playwright test",
+    "build": "echo 'Build completed'"
   },
   "keywords": [
     "nodejs",
