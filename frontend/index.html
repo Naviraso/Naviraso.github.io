@@ -10,19 +10,29 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
-<form id="route-form" autocomplete="off">
-    <label for="from-input">Von:</label>
-    <div class="autocomplete-container">
-            <input id="from-input" type="text" placeholder="Startort eingeben" required />
-            <div id="from-suggestions" class="autocomplete-suggestions"></div>
-        </div>
-    <label for="to-input">Nach:</label>
-    <div class="autocomplete-container">
-            <input id="to-input" type="text" placeholder="Zielort eingeben" required />
-            <div id="to-suggestions" class="autocomplete-suggestions"></div>
-        </div>
+<h2>Gespeicherte Routen</h2>
+<div id="saved-routes-container">
+    <select id="saved-routes-dropdown">
+        <option value="">– Gespeicherte Route auswählen –</option>
+    </select>
+</div>
+<form id="route-form">
+    <input id="from-input" list="from-suggestions" placeholder="Startadresse">
+    <datalist id="from-suggestions"></datalist>
+
+    <input id="to-input" list="to-suggestions" placeholder="Zieladresse">
+    <datalist id="to-suggestions"></datalist>
+
     <button type="submit">Route berechnen</button>
+    <button type="button" id="save-route-btn" disabled>Route speichern</button>
 </form>
+
+<details class="info-details">
+    <summary class="info-icon">i</summary>
+    <div class="info-message">
+        Zuerst eine Route berechnen, danach kann sie gespeichert werden.
+    </div>
+</details>
 
 <div id="results">
     <!-- Route results will appear here -->

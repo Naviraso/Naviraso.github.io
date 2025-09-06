@@ -1,90 +1,235 @@
-body {
-    font-family: Arial, sans-serif;
-    max-width: 800px;
+/* ===== Design-Token ===== */
+:root{
+    --font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+    --color-text: #333;
+    --color-muted: #666;
+    --color-border: #ddd;
+    --color-bg: #fff;
+
+    --primary: #0d6efd;
+    --primary-hover: #0b5ed7;
+
+    --success: #28a745;
+    --success-hover: #1e7e34;
+
+    --info: #17a2b8;
+    --info-hover: #117a8b;
+
+    --table-alt: #f9f9f9;
+    --table-head: #f2f2f2;
+
+    --map-border: #ddd;
+
+    --radius-sm: 4px;
+    --radius-md: 6px;
+
+    --space-1: 6px;
+    --space-2: 10px;
+    --space-3: 15px;
+    --space-4: 20px;
+
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+}
+
+/* ===== Layout & Typo ===== */
+html, body{
+    height: 100%;
+}
+body{
+    font-family: var(--font-family);
+    color: var(--color-text);
+    background: var(--color-bg);
+    max-width: 880px;
     margin: 0 auto;
-    padding: 20px;
+    padding: var(--space-4);
+    line-height: 1.45;
 }
-form {
-    margin-bottom: 30px;
-    padding: 20px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+
+/* ===== Überschriften ===== */
+h2{
+    margin: var(--space-4) 0 var(--space-2);
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--primary);
+    color: var(--color-text);
+    font-weight: 650;
 }
-label {
-    display: inline-block;
-    width: 60px;
-    margin-right: 10px;
+
+/* ===== Formular ===== */
+form{
+    margin: 0 0 var(--space-4);
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    background: var(--color-bg);
+
+    /* Flexbox-Layout */
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
 }
-.autocomplete-container {
-    position: relative;
-    display: inline-block;
+
+/* Inputs, Selects & Buttons einheitlich */
+form input[type="text"],
+form select,
+form button{
+    flex: 1;
+    min-width: 150px;
+    box-sizing: border-box;
+    margin: 0; /* alte Margins entfernen */
 }
-.autocomplete-suggestions {
-    position: absolute;
-    background: #fff;
-    border: 1px solid #ccc;
-    z-index: 1000;
-    width: 200px;
-    max-height: 180px;
-    overflow-y: auto;
-    display: none;
+
+input[type="text"]:focus,
+select:focus{
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(13,110,253,.12);
 }
-.autocomplete-suggestion {
-    padding: 6px 10px;
-    cursor: pointer;
-}
-.autocomplete-suggestion:hover {
-    background: #f2f2f2;
-}
-input[type="text"] {
-    width: 200px;
-    padding: 5px;
-    margin-right: 10px;
-    margin-bottom: 10px;
-}
-button {
-    padding: 8px 15px;
-    background-color: #007bff;
-    color: white;
+
+/* Buttons */
+button{
+    appearance: none;
     border: none;
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--primary);
     cursor: pointer;
+    transition: background-color .15s ease, opacity .15s ease;
+    margin-right: var(--space-2);
+    vertical-align: middle;
 }
-button:hover {
-    background-color: #0056b3;
+button:hover{ background: var(--primary-hover); }
+button:disabled{
+    opacity: .6;
+    cursor: not-allowed;
 }
-table {
+
+/* Speichern-Button als Success-Variante */
+#save-route-btn{
+    background: var(--success);
+}
+#save-route-btn:hover{
+    background: var(--success-hover);
+}
+
+/* Gespeicherte Routen Dropdown */
+#saved-routes-container{ margin: var(--space-3) 0; }
+#saved-routes-dropdown{
+    padding: var(--space-2);
+    width: 100%;
+    max-width: 420px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+}
+
+/* Info-Icon per <details> (ohne JS) */
+.info-details {
+    display: block;
+    margin-top: var(--space-2);
+}
+.info-details summary {
+    list-style: none;
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    text-align: center;
+    border-radius: 50%;
+    background: var(--info);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    user-select: none;
+    cursor: pointer;
+    transition: background-color .15s ease;
+}
+.info-details summary:hover {
+    background-color: var(--info-hover);
+}
+
+/* Info-Text (aufklappend) */
+.info-details .info-message{
+    margin-top: var(--space-2);
+    padding: var(--space-3);
+    background: #e9f7fb;
+    border: 1px solid var(--info);
+    color: #055160;
+    border-radius: var(--radius-md);
+    max-width: 520px;
+}
+
+/* Karte */
+.map-container{ margin: var(--space-4) 0; }
+#map{
+    height: 420px;
+    width: 100%;
+    margin: var(--space-3) 0;
+    border: 1px solid var(--map-border);
+    border-radius: var(--radius-md);
+}
+
+/* Ergebnisse */
+#results{
+    margin-top: var(--space-3);
+}
+
+/* Tabelle: Meistgesuchte Routen */
+table{
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    margin-top: var(--space-3);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
 }
-th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
+th, td{
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--color-border);
     text-align: left;
 }
-th {
-    background-color: #f2f2f2;
-    font-weight: bold;
+th{
+    background: var(--table-head);
+    font-weight: 700;
 }
-tr:nth-child(even) {
-    background-color: #f9f9f9;
+tr:nth-child(even) td{
+    background: var(--table-alt);
 }
-#search-history {
-    margin-top: 30px;
+
+/* Sektion unter der Karte */
+#search-history{ margin-top: var(--space-4); }
+
+/* ===== Legacy-Autocomplete (falls noch vorhanden, stört sonst nicht) ===== */
+.autocomplete-container{ position: relative; display: inline-block; }
+.autocomplete-suggestions{
+    position: absolute;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    z-index: 1000;
+    width: 280px;
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
 }
-h2 {
-    color: #333;
-    border-bottom: 2px solid #007bff;
-    padding-bottom: 5px;
+.autocomplete-suggestion{
+    padding: 8px 10px;
+    cursor: pointer;
 }
-#map {
-    height: 400px;
-    width: 100%;
-    margin: 20px 0;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-}
-.map-container {
-    margin: 20px 0;
+.autocomplete-suggestion:hover{ background: #f6f8fb; }
+
+/* ===== Responsiv ===== */
+@media (max-width: 560px){
+    form{ flex-direction: column; }
+    form input[type="text"],
+    form select,
+    form button,
+    form .info-details{
+        width: 100%;
+    }
 }
