@@ -12,15 +12,15 @@
 <body>
 <h2>Gespeicherte Routen</h2>
 <div id="saved-routes-container">
-    <select id="saved-routes-dropdown">
+    <label for="saved-routes-dropdown"></label><select id="saved-routes-dropdown">
         <option value="">– Gespeicherte Route auswählen –</option>
     </select>
 </div>
 <form id="route-form">
-    <input id="from-input" list="from-suggestions" placeholder="Startadresse">
+    <label for="from-input"></label><input id="from-input" list="from-suggestions" placeholder="Startadresse">
     <datalist id="from-suggestions"></datalist>
 
-    <input id="to-input" list="to-suggestions" placeholder="Zieladresse">
+    <label for="to-input"></label><input id="to-input" list="to-suggestions" placeholder="Zieladresse">
     <datalist id="to-suggestions"></datalist>
 
     <button type="submit">Route berechnen</button>
