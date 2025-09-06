@@ -124,7 +124,7 @@ function buildDirectionsRequest(fromCoords, toCoords) {
 // Request senden
 async function postDirections(requestBody) {
   const url = 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
-  const res = await fetch(url, {
+  return await fetch(url, {
     method: 'POST',
     headers: {
       'Authorization': ORS_API_KEY,
@@ -132,11 +132,10 @@ async function postDirections(requestBody) {
     },
     body: JSON.stringify(requestBody)
   });
-  return res;
 }
 
 // HTTP-Fehler in eine verständliche Meldung umwandeln
-async function parseHttpError(res, fromLabel, toLabel) {
+async function parseHttpError(res) {
   const errTxt = await res.text();
   try {
     const j = JSON.parse(errTxt);
