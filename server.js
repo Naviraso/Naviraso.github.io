@@ -36,7 +36,24 @@ CREATE TABLE IF NOT EXISTS routes (
   distance_m INTEGER,
   duration_s INTEGER,
   created_at TEXT DEFAULT (datetime('now'))
+    )
+`).run();
+
+// 1) Duplikate entfernen (alle außer der jeweils kleinsten id)
+db.exec(`
+BEGIN;
+DELETE FROM routes
+WHERE id NOT IN (
+  SELECT MIN(id) FROM routes
+  GROUP BY from_label, to_label
 );
+COMMIT;
+`);
+
+// 2) Danach UNIQUE-Index anlegen
+db.prepare(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_routes_from_to
+        ON routes(from_label, to_label)
 `).run();
 
 // --- Validation (Zod)
@@ -169,6 +186,17 @@ app.post('/api/routes', (req, res) => {
     if (!parsed.success) return res.status(400).json({ error: 'Invalid body', issues: parsed.error.issues });
 
     const { from, to, distance_m, duration_s } = parsed.data;
+
+    // Duplikatcheck
+    const existing = db.prepare(`
+    SELECT id FROM routes
+    WHERE from_label = ? AND to_label = ?
+    LIMIT 1
+  `).get(from.label, to.label);
+
+    if (existing) {
+        return res.status(204).send();
+    }
 
     const stmt = db.prepare(`
     INSERT INTO routes (from_label, from_lon, from_lat, to_label, to_lon, to_lat, distance_m, duration_s)

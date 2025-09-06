@@ -28,34 +28,79 @@ async function fetchAddressSuggestions(query) {
   }
 }
 
-function setupAutocomplete(inputId, suggestionsId, onSelect) {
+async function setupAutocomplete(inputId, datalistId, onSelect) {
   const input = document.getElementById(inputId);
-  const suggestionsBox = document.getElementById(suggestionsId);
+  const datalist = document.getElementById(datalistId);
+
+  if (!input || !datalist) {
+    console.warn('Autocomplete: Input oder Datalist nicht gefunden:', inputId, datalistId);
+    return;
+  }
 
   input.addEventListener('input', async () => {
     const value = input.value.trim();
-    if (value.length < 3) { suggestionsBox.style.display = 'none'; return; }
+    if (value.length < 3) {
+      datalist.innerHTML = '';
+      return;
+    }
     const suggestions = await fetchAddressSuggestions(value);
-    suggestionsBox.innerHTML = '';
+    datalist.innerHTML = '';
     suggestions.forEach(s => {
-      const div = document.createElement('div');
-      div.className = 'autocomplete-suggestion';
-      div.textContent = s.label;
-      div.onclick = () => {
-        input.value = s.label;
-        suggestionsBox.style.display = 'none';
-        onSelect && onSelect(s);
-      };
-      suggestionsBox.appendChild(div);
+      const option = document.createElement('option');
+      option.value = s.label;
+      datalist.appendChild(option);
     });
-    suggestionsBox.style.display = suggestions.length ? 'block' : 'none';
   });
 
-  document.addEventListener('click', (e) => {
-    if (!suggestionsBox.contains(e.target) && e.target !== input) {
-      suggestionsBox.style.display = 'none';
+  input.addEventListener('change', async () => {
+    const value = input.value.trim();
+    if (!value) return;
+
+    // Erst Autocomplete probieren …
+    let suggestions = await fetchAddressSuggestions(value);
+
+    // … wenn leer: Fallback "search"
+    if (!suggestions.length) {
+      suggestions = await fetchAddressBySearch(value);
     }
+
+    // 1) exakter Treffer?
+    let match = suggestions.find(s => s.label === value);
+
+    // 2) sonst: erster sinnvoller Vorschlag (wenn vorhanden)
+    if (!match && suggestions.length) {
+      match = suggestions[0];
+    }
+
+    if (match) onSelect && onSelect(match);
   });
+
+}
+
+// Fallback: tolerantere Suche, wenn Autocomplete nichts findet
+async function fetchAddressBySearch(query) {
+  if (!query || query.length < 3) return [];
+  const url = `https://api.openrouteservice.org/geocode/search` +
+      `?api_key=${ORS_API_KEY}` +
+      `&text=${encodeURIComponent(query)}` +
+      `&layers=address,street,venue` +
+      `&boundary.country=CHE` +
+      `&size=5`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.features) return [];
+    return data.features
+        .filter(f => f.geometry && f.geometry.type === "Point")
+        .map(f => ({
+          label: f.properties.label,
+          coords: f.geometry.coordinates // [lon, lat]
+        }));
+  } catch (e) {
+    console.error("Search Fallback Fehler:", e);
+    return [];
+  }
 }
 
 // ==== Leaflet Map & Routing ====
@@ -68,120 +113,191 @@ function initMap() {
   setTimeout(() => map.invalidateSize(), 100);
 }
 
-async function calculateRoute(fromCoords, toCoords, fromLabel, toLabel) {
-  const url = 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
-  const requestBody = {
+// Request-Body bauen
+function buildDirectionsRequest(fromCoords, toCoords) {
+  return {
     coordinates: [fromCoords, toCoords], // [ [lon,lat], [lon,lat] ]
     instructions: false
   };
+}
 
+// Request senden
+async function postDirections(requestBody) {
+  const url = 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': ORS_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(requestBody)
+  });
+  return res;
+}
+
+// HTTP-Fehler in eine verständliche Meldung umwandeln
+async function parseHttpError(res, fromLabel, toLabel) {
+  const errTxt = await res.text();
   try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': ORS_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    });
+    const j = JSON.parse(errTxt);
+    if (res.status === 404 && j?.error?.code === 2010) {
+      return "Kein routenfähiger Punkt in der Nähe gefunden. Bitte eine genauere Adresse oder Straße auswählen.";
+    }
+  } catch {}
+  return `HTTP ${res.status}: ${errTxt}`;
+}
+
+// GeoJSON-Feature sicher extrahieren
+function extractRouteFeature(data) {
+  if (!data || !Array.isArray(data.features)) return null;
+  return data.features[0] || null; // erwartet LineString
+}
+
+// Zusammenfassung (Distanz/Dauer) lesen
+function extractSummary(feature) {
+  const s = feature?.properties?.summary || {};
+  return {
+    distance_m: Number(s.distance ?? 0),
+    duration_s: Number(s.duration ?? 0)
+  };
+}
+
+// km / Minuten formatiert zurückgeben
+function formatKm(meters) {
+  if (meters == null) return '—';
+  return (meters / 1000).toFixed(2);
+}
+function formatMinutes(seconds) {
+  if (seconds == null) return '—';
+  return Math.round(seconds / 60);
+}
+
+// Ergebnis-Text in die Seite schreiben
+function renderRouteSummary(fromLabel, toLabel, distance_m, duration_s) {
+  const distanceKm = formatKm(distance_m);
+  const durationMin = formatMinutes(duration_s);
+
+  const results = document.getElementById('results');
+  results.innerHTML = ''; // alten Inhalt löschen
+
+  const h3 = document.createElement('h3');
+  h3.textContent = `Route von "${fromLabel}" nach "${toLabel}"`;
+
+  const p1 = document.createElement('p');
+  p1.innerHTML = `<strong>Entfernung:</strong> ${distanceKm} km`;
+
+  const p2 = document.createElement('p');
+  p2.innerHTML = `<strong>Fahrzeit:</strong> ${durationMin} Minuten`;
+
+  results.appendChild(h3);
+  results.appendChild(p1);
+  results.appendChild(p2);
+}
+
+// Linie auf die Karte zeichnen
+function drawRouteOnMap(feature) {
+  if (!feature?.geometry?.coordinates) return;
+
+  if (routeLayer) map.removeLayer(routeLayer);
+  const latLngs = feature.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+  routeLayer = L.polyline(latLngs, { weight: 5 }).addTo(map);
+  map.fitBounds(routeLayer.getBounds());
+}
+
+// Hauptfunktion: koordiniert die Schritte
+async function calculateRoute(fromCoords, toCoords, fromLabel, toLabel) {
+  const saveBtn = document.getElementById('save-route-btn');
+  try {
+    if (saveBtn) saveBtn.disabled = true;
+    const body = buildDirectionsRequest(fromCoords, toCoords);
+    const res = await postDirections(body);
+
 
     if (!res.ok) {
-      const errTxt = await res.text();
-      try {
-        const j = JSON.parse(errTxt);
-        if (res.status === 404 && j?.error?.code === 2010) {
-          showRouteError(fromLabel, toLabel,
-              "Kein routenfähiger Punkt in der Nähe gefunden. Bitte eine genauere Adresse oder Straße auswählen.");
-          return;
-        }
-      } catch {}
-      showRouteError(fromLabel, toLabel, `HTTP ${res.status}: ${errTxt}`);
+      const msg = await parseHttpError(res, fromLabel, toLabel);
+      lastRoute = null;
+      showRouteError(fromLabel, toLabel, msg);
       return;
     }
 
     const data = await res.json();
+    const feature = extractRouteFeature(data);
 
-    // ORS /geojson returns a FeatureCollection with one LineString feature
-    const feature = data && Array.isArray(data.features) ? data.features[0] : null;
-
-    if (!feature || !feature.geometry || !feature.geometry.coordinates) {
+    if (
+        !feature ||
+        !feature.geometry ||
+        !Array.isArray(feature.geometry.coordinates) ||
+        feature.geometry.coordinates.length === 0
+    ) {
+      lastRoute = null;
       showRouteError(fromLabel, toLabel, "Keine Route gefunden");
       return;
     }
 
-    const summary = (feature.properties && feature.properties.summary) ? feature.properties.summary : {};
-    const distanceKm = summary.distance != null ? (summary.distance / 1000).toFixed(2) : '—';
-    const durationMin = summary.duration != null ? Math.round(summary.duration / 60) : '—';
+    const { distance_m, duration_s } = extractSummary(feature);
 
-    document.getElementById('results').innerHTML =
-      `<h3>Route von "${fromLabel}" nach "${toLabel}"</h3>
-       <p><strong>Entfernung:</strong> ${distanceKm} km</p>
-       <p><strong>Fahrzeit:</strong> ${durationMin} Minuten</p>`;
+    renderRouteSummary(fromLabel, toLabel, distance_m, duration_s);
+    drawRouteOnMap(feature);
 
-    // --- Save route to backend
-    try {
-      const distance_m = Math.round(Number(summary.distance ?? 0));
-      const duration_s = Math.round(Number(summary.duration ?? 0));
+    // letzte Route merken
+    lastRoute = {
+      from: { label: fromLabel, lon: Number(fromCoords[0]), lat: Number(fromCoords[1]) },
+      to:   { label: toLabel,   lon: Number(toCoords[0]),   lat: Number(toCoords[1]) },
+      distance_m: Math.round(Number(distance_m ?? 0)),
+      duration_s: Math.round(Number(duration_s ?? 0)),
+    };
 
-      const body = {
-        from: {
-          label: fromLabel,
-          lon: Number(fromCoords[0]),
-          lat: Number(fromCoords[1]),
-        },
-        to: {
-          label: toLabel,
-          lon: Number(toCoords[0]),
-          lat: Number(toCoords[1]),
-        },
-        distance_m,
-        duration_s,
-      };
+    // Suchhistorie aktualisieren
+    addToHistory(fromLabel, toLabel);
+    displayHistory();
 
-      const saveRes = await fetch('/api/routes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      if (!saveRes.ok) {
-        const txt = await saveRes.text();
-        console.error('Autosave fehlgeschlagen:', saveRes.status, txt);
-      } else {
-        const saved = await saveRes.json();
-        console.log('Autosave OK, id:', saved.id);
-      }
-    } catch (e) {
-      console.warn('Speichern der Route: Netzwerkfehler', e);
-    }
-
-    if (routeLayer) map.removeLayer(routeLayer);
-    // coordinates: [ [lon,lat], ... ]
-    const latLngs = feature.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
-    routeLayer = L.polyline(latLngs, { weight: 5 }).addTo(map);
-    map.fitBounds(routeLayer.getBounds());
+    // Speichern erlauben
+    if (saveBtn) saveBtn.disabled = false;
 
   } catch (error) {
     console.error('Routing Error:', error);
+    lastRoute = null;
+    if (saveBtn) saveBtn.disabled = true;
     showRouteError(fromLabel, toLabel, "Netzwerk-Fehler");
   }
 }
 
 function showRouteError(from, to, msg) {
-  document.getElementById('results').innerHTML =
-    `<h3>Fehler bei der Routenberechnung</h3>
-     <p>Die Route von "${from}" nach "${to}" konnte nicht berechnet werden.</p>
-     <p>Fehler: ${msg}</p>`;
+  const results = document.getElementById('results');
+  results.innerHTML = '';
+
+  const h3 = document.createElement('h3');
+  h3.textContent = 'Fehler bei der Routenberechnung';
+
+  const p1 = document.createElement('p');
+  p1.textContent = `Die Route von "${from}" nach "${to}" konnte nicht berechnet werden.`;
+
+  const p2 = document.createElement('p');
+  p2.textContent = `Fehler: ${msg}`;
+
+  results.appendChild(h3);
+  results.appendChild(p1);
+  results.appendChild(p2);
 }
 
 // ==== Suchhistorie ====
 function getHistory() {
   const raw = localStorage.getItem('routeHistory');
-  return raw ? JSON.parse(raw) : [];
+  if (!raw) return [];
+  try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.warn('routeHistory defekt – zurücksetzen:', e);
+      localStorage.removeItem('routeHistory');
+      return [];
+    }
 }
+
 function saveHistory(history) {
   localStorage.setItem('routeHistory', JSON.stringify(history));
 }
+
 function addToHistory(from, to) {
   let history = getHistory();
   const key = `${from}__${to}`;
@@ -192,6 +308,7 @@ function addToHistory(from, to) {
   saveHistory(history.slice(0, 10));
   displayHistory();
 }
+
 function displayHistory() {
   const tbody = document.getElementById('history-tbody');
   if (!tbody) return;
@@ -215,11 +332,62 @@ function displayHistory() {
   });
 }
 
+async function loadSavedRoutesDropdown() {
+  try {
+    const res = await fetch('/api/routes?limit=50');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const routes = data.items || [];
+
+    const dropdown = document.getElementById('saved-routes-dropdown');
+    dropdown.innerHTML = '';
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = '– Gespeicherte Route auswählen –';
+    dropdown.appendChild(defaultOpt);
+
+    routes.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = `${r.from_label} → ${r.to_label}`;
+      opt.dataset.from = JSON.stringify({label: r.from_label, lon: r.from_lon, lat: r.from_lat});
+      opt.dataset.to   = JSON.stringify({label: r.to_label,   lon: r.to_lon,   lat: r.to_lat});
+      dropdown.appendChild(opt);
+    });
+  } catch (e) {
+    console.error('Fehler beim Laden der gespeicherten Routen:', e);
+  }
+}
+
+function setupSavedRoutesDropdown() {
+  const dropdown = document.getElementById('saved-routes-dropdown');
+  if (!dropdown) return;
+
+  dropdown.addEventListener('change', async () => {
+    const selected = dropdown.options[dropdown.selectedIndex];
+    if (!selected || !selected.dataset.from) return;
+
+    const from = JSON.parse(selected.dataset.from);
+    const to   = JSON.parse(selected.dataset.to);
+
+    // Route sofort berechnen
+    await calculateRoute(
+        [from.lon, from.lat],
+        [to.lon, to.lat],
+        from.label,
+        to.label
+    );
+  });
+}
+
 // ==== Formular-Logik ====
 let fromSelection = null, toSelection = null;
+let lastRoute = null;
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
   displayHistory();
+  loadSavedRoutesDropdown();
+  setupSavedRoutesDropdown();
 
   setupAutocomplete('from-input', 'from-suggestions', s => { fromSelection = s; });
   setupAutocomplete('to-input', 'to-suggestions', s => { toSelection = s; });
@@ -231,20 +399,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const from = fromInput.value.trim();
     const to = toInput.value.trim();
 
+    // FROM absichern
     if (!fromSelection || fromSelection.label !== from) {
-      const suggestions = await fetchAddressSuggestions(from);
+      let suggestions = await fetchAddressSuggestions(from);
+      if (!suggestions.length) {
+        suggestions = await fetchAddressBySearch(from); // <-- neu
+      }
       fromSelection = suggestions.length ? suggestions[0] : null;
     }
+
+    // TO absichern
     if (!toSelection || toSelection.label !== to) {
-      const suggestions = await fetchAddressSuggestions(to);
+      let suggestions = await fetchAddressSuggestions(to);
+      if (!suggestions.length) {
+        suggestions = await fetchAddressBySearch(to); // <-- neu
+      }
       toSelection = suggestions.length ? suggestions[0] : null;
     }
+
     if (!fromSelection || !toSelection) {
       showRouteError(from || '—', to || '—', "Adresse nicht gefunden");
       return;
     }
 
-    addToHistory(fromSelection.label, toSelection.label);
     await calculateRoute(fromSelection.coords, toSelection.coords, fromSelection.label, toSelection.label);
 
     // Felder leeren & Auswahl zurücksetzen
@@ -252,5 +429,54 @@ document.addEventListener('DOMContentLoaded', () => {
     toInput.value = '';
     fromSelection = null;
     toSelection = null;
+  });
+
+  // Route Speichern-Button
+  document.getElementById('save-route-btn').addEventListener('click', async (e) => {
+    if (!lastRoute) return;
+
+    // 1) Clientseitiger Duplikatcheck: existiert Route schon im Dropdown?
+    const dd = document.getElementById('saved-routes-dropdown');
+    if (dd) {
+      const fromLabel = String(lastRoute.from.label).trim();
+      const toLabel   = String(lastRoute.to.label).trim();
+      const exists = Array.from(dd.options).some(opt => {
+        // Optionen haben Text "FROM → TO"
+        const txt = (opt.textContent || '').trim();
+        return txt === `${fromLabel} → ${toLabel}`;
+      });
+      if (exists) {
+        return;
+      }
+    }
+
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/routes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lastRoute),
+      });
+
+      // Serverseitiger Check greift auch: 204 = schon vorhanden → nichts tun
+      if (res.status === 204) {
+        return;
+      }
+
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error('Speichern fehlgeschlagen:', res.status, txt);
+        alert('Route konnte nicht gespeichert werden');
+      } else {
+        const saved = await res.json();
+        console.log('Route gespeichert, id:', saved.id);
+        loadSavedRoutesDropdown(); // Dropdown aktualisieren
+      }
+    } catch (err) {
+      console.error('Fehler beim Speichern:', err);
+    } finally {
+      btn.disabled = false;
+    }
   });
 });
