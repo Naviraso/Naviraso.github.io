@@ -68,7 +68,7 @@ Standardmässig läuft der Server auf http://localhost:3000
 
 ## REST-API
 Die Anwendung stellt eine REST-API unter /api/routes bereit.
-Dokumentation via Swagger erreichbar unter http://localhost:3000/api-docs
+Dokumentation via Swagger erreichbar unter http://localhost:3000/api/docs
 
 ### Endpunkte
 - GET /api/routes – Liste gespeicherter Routen
@@ -110,6 +110,7 @@ GitLab CI/CD (.gitlab-ci.yml):
 - Unit- und Akzeptanztests
 - Automatisches Deployment via CI/CD
 - Mobile Friendly und barrierefreies Layout
+
 
 
 
