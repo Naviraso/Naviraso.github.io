@@ -42,7 +42,7 @@ Zusätzlich wird eine eigene REST-API bereitgestellt, um häufig genutzte oder p
 
 ---
 
-## Installation & Start
+## Installation und Start
 ### Voraussetzungen
 - Node.js >= 16
 - npm
@@ -78,7 +78,7 @@ Dokumentation via Swagger erreichbar unter http://localhost:3000/api-docs
 ---
 
 ## Tests
-### Unit- & Integrationstests
+### Unit- und Integrationstests
 ```
 npm run test
 ```
@@ -91,13 +91,10 @@ npm run test:debug    # Debug-Modus
 
 ---
 
-## CI/CD & Deployment
+## CI/CD und Deployment
 GitLab CI/CD (.gitlab-ci.yml):
 - Installiert Dependencies
 - Führt Unit- und Akzeptanztests automatisch aus
-- Build & Deployment (falls Tests erfolgreich)
-
-Deployment-Ziel: konfigurierbarer Server (z. B. Render, Railway, GitLab Pages oder eigener Server)
 
 ---
 
@@ -109,7 +106,8 @@ Deployment-Ziel: konfigurierbarer Server (z. B. Render, Railway, GitLab Pages od
 ---
 ## Bewertungskriterien (Abdeckung)
 - Frontend (Autocomplete, Routing, Top 10 Suchanfragen)
-- REST-API mit Swagger & SQL Injection Schutz
+- REST-API mit Swagger und SQL Injection Schutz
 - Unit- und Akzeptanztests
 - Automatisches Deployment via CI/CD
-- Mobile Friendly & barrierefreies Layout
+- Mobile Friendly und barrierefreies Layout
+
