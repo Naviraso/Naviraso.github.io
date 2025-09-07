@@ -62,7 +62,7 @@ sqlite3 routes.db < init.sql
 ```
 npm run start
 ```
-Standardmäßig läuft der Server auf http://localhost:3000
+Standardmässig läuft der Server auf http://localhost:3000
 
 ---
 
@@ -110,5 +110,6 @@ GitLab CI/CD (.gitlab-ci.yml):
 - Unit- und Akzeptanztests
 - Automatisches Deployment via CI/CD
 - Mobile Friendly und barrierefreies Layout
+
 
 
