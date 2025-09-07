@@ -9,12 +9,12 @@ Zusätzlich wird eine eigene REST-API bereitgestellt, um häufig genutzte oder p
 
 ## Features
 - Eingabe von Start- und Zielorten mit Autocomplete-Vorschlägen  
-- Anzeige der Route (Entfernung & Dauer)  
+- Anzeige der Route (Entfernung und Dauer)  
 - Speicherung und Anzeige der 10 häufigsten Suchanfragen im Browser  
 - REST-API (Richardson Maturity Level 2) mit Swagger-Dokumentation  
 - Schutz vor SQL-Injection (Prepared Statements mit `better-sqlite3`)  
 - Unit-Tests (Jest/Supertest) und Akzeptanztests (Playwright)  
-- Automatisiertes Deployment & CI/CD-Pipeline (GitLab CI)
+- Automatisiertes Deployment und CI/CD-Pipeline (GitLab CI)
 
 ---
 
@@ -110,4 +110,5 @@ GitLab CI/CD (.gitlab-ci.yml):
 - Unit- und Akzeptanztests
 - Automatisches Deployment via CI/CD
 - Mobile Friendly und barrierefreies Layout
+
 
